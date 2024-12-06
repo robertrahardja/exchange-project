@@ -1,11 +1,10 @@
-import { ethers } from "ethers";
-import { cropData } from "../../utils/math";
+const { ethers } = require("ethers");
+const { cropData } = require("./utils/math");
 
 const CHAIN_RPC_URL = {
   development: "http://127.0.0.1:7545", // Local Ganache instance
 };
 
-// Exchange contract ABI - add your actual ABI here
 const EXCHANGE_ABI = [
   "function getAmountOutPrice(uint256 supply, uint256[] calldata path) external view returns (uint256[] memory)",
   "function getAmountInPrice(uint256 supply, uint256[] calldata path) external view returns (uint256[] memory)",
@@ -14,12 +13,10 @@ const EXCHANGE_ABI = [
   "function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, uint256[] calldata path, address to, uint256 deadline) external returns (uint256[] memory amounts)",
 ];
 
-// Replace with your actual contract address
-// const EXCHANGE_CONTRACT_ADDRESS = "YOUR_EXCHANGE_CONTRACT_ADDRESS";
 const EXCHANGE_CONTRACT_ADDRESS = "0xdEF4BfeC8D2CB5ABE56E6D54665dDF78445D7112";
 
 const getProvider = () => {
-  return new ethers.JsonRpcProvider(CHAIN_RPC_URL);
+  return new ethers.JsonRpcProvider(CHAIN_RPC_URL.development);
 };
 
 const getExchangeContract = (signerOrProvider) => {
@@ -30,18 +27,18 @@ const getExchangeContract = (signerOrProvider) => {
   );
 };
 
-export const chain_api = async (address) => {
+const chain_api = async (address) => {
   const provider = getProvider();
   const signer = provider.getSigner(address);
   return getExchangeContract(signer);
 };
 
-export const substrate_wallet_injector = async (address) => {
+const substrate_wallet_injector = async (address) => {
   const provider = getProvider();
   return provider.getSigner(address);
 };
 
-export const substrate_getAmountOutPrice = async (
+const substrate_getAmountOutPrice = async (
   intactWalletAddress,
   tokenNumber,
   poolA,
@@ -60,7 +57,7 @@ export const substrate_getAmountOutPrice = async (
   }
 };
 
-export const substrate_EstimateOutToken = async (
+const substrate_EstimateOutToken = async (
   intactWalletAddress,
   inputNumber,
   tokenAId,
@@ -80,7 +77,7 @@ export const substrate_EstimateOutToken = async (
   }
 };
 
-export const substrate_getEstimateLpToken = async (
+const substrate_getEstimateLpToken = async (
   intactWalletAddress,
   tokenA,
   amountA,
@@ -95,7 +92,6 @@ export const substrate_getEstimateLpToken = async (
       BigInt(tokenB),
       BigInt(amountB),
     );
-
     // Convert to human readable format
     const lpAmount = ethers.formatUnits(estimatedLp, 18);
     return cropData(parseFloat(lpAmount), 5).toString();
@@ -103,4 +99,12 @@ export const substrate_getEstimateLpToken = async (
     console.error("Error estimating LP tokens:", error);
     throw error;
   }
+};
+
+module.exports = {
+  chain_api,
+  substrate_wallet_injector,
+  substrate_getAmountOutPrice,
+  substrate_EstimateOutToken,
+  substrate_getEstimateLpToken,
 };

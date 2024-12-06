@@ -5,3 +5,5 @@
 - use ganache UI v2.7.1
 - truffle compile
 - truffle migrate --reset
+
+- npx vite

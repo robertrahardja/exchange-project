@@ -11,4 +11,7 @@ const cropData = (num, n) => {
   return parseInt(String(num * Math.pow(10, n))) / Math.pow(10, n);
 };
 
-export { checkNumber, cropData };
+module.exports = {
+  checkNumber,
+  cropData,
+};
