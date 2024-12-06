@@ -6,4 +6,4 @@
 - truffle compile
 - truffle migrate --reset
 
-# To run the test once ganache is running, just node main.just
+- To run the test once ganache is running, just node main.just
