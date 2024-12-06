@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
 interface IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
@@ -8,14 +8,6 @@ interface IERC20 {
 }
 
 contract Exchange {
-    error InvalidPath();
-    error InvalidAmount();
-    error IdenticalTokens();
-    error DeadlineExpired();
-    error InsufficientOutputAmount();
-    error TransferFailed();
-    error Locked();
-
     bool private locked;
 
     event TokenSwap(
@@ -34,7 +26,7 @@ contract Exchange {
     );
 
     modifier noReentrant() {
-        if(locked) revert Locked();
+        require(!locked, "Reentrant call");
         locked = true;
         _;
         locked = false;
@@ -45,7 +37,7 @@ contract Exchange {
         pure 
         returns (uint256[] memory)
     {
-        if (path.length < 2) revert InvalidPath();
+        require(path.length >= 2, "Invalid path");
         
         uint256[] memory amounts = new uint256[](path.length);
         amounts[0] = supply;
@@ -70,7 +62,7 @@ contract Exchange {
         pure
         returns (uint256[] memory)
     {
-        if (path.length < 2) revert InvalidPath();
+        require(path.length >= 2, "Invalid path");
         
         uint256[] memory amounts = new uint256[](path.length);
         amounts[path.length - 1] = supply;
@@ -88,8 +80,8 @@ contract Exchange {
         address token1,
         uint256 amount1
     ) external pure returns (uint256) {
-        if (token0 == token1) revert IdenticalTokens();
-        if (amount0 == 0 || amount1 == 0) revert InvalidAmount();
+        require(token0 != token1, "Identical tokens");
+        require(amount0 > 0 && amount1 > 0, "Invalid amount");
         
         return sqrt(amount0 * amount1);
     }
@@ -99,8 +91,8 @@ contract Exchange {
         address token0,
         address token1
     ) external view returns (uint256) {
-        if (token0 == token1) revert IdenticalTokens();
-        if (supply == 0) revert InvalidAmount();
+        require(token0 != token1, "Identical tokens");
+        require(supply > 0, "Invalid amount");
         
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
@@ -115,18 +107,17 @@ contract Exchange {
         address to,
         uint256 deadline
     ) external noReentrant returns (uint256[] memory amounts) {
-        if (block.timestamp > deadline) revert DeadlineExpired();
-        if (path.length < 2) revert InvalidPath();
+        require(block.timestamp <= deadline, "Deadline expired");
+        require(path.length >= 2, "Invalid path");
         
         amounts = _getAmountOutPrice(amountIn, path);
-        if (amounts[amounts.length - 1] < amountOutMin) revert InsufficientOutputAmount();
+        require(amounts[amounts.length - 1] >= amountOutMin, "Insufficient output amount");
         
-        bool success = IERC20(path[0]).transferFrom(
+        require(IERC20(path[0]).transferFrom(
             msg.sender,
             address(this),
             amounts[0]
-        );
-        if (!success) revert TransferFailed();
+        ), "Transfer failed");
         
         _swap(amounts, path, to);
         
@@ -148,8 +139,7 @@ contract Exchange {
         address to
     ) internal {
         for (uint256 i = 0; i < path.length - 1; i++) {
-            bool success = IERC20(path[i + 1]).transfer(to, amounts[i + 1]);
-            if (!success) revert TransferFailed();
+            require(IERC20(path[i + 1]).transfer(to, amounts[i + 1]), "Transfer failed");
         }
     }
 
